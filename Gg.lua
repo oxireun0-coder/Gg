@@ -1,10 +1,13 @@
--- Oxireun UI Library - Slow RGB Border, Purple Theme
--- Complete Version with Enhanced Remote Logger Detection & GUI Close Notifications
+-- Oxireun UI Library - Roox Edition (Fixed & Enhanced)
+-- Remote Logger Detection + Custom UI Notifications
 
 local OxireunUI = {}
 OxireunUI.__index = OxireunUI
 
--- Purple theme color palette
+-- LOGO AYARI (Buraya Roox Orijinal Logo ID'sini yapıştırabilirsin)
+local ROOX_LOGO_ID = "rbxassetid://12345678" -- Buraya kendi ID'ni koy, yoksa boş kalır veya placeholder görünür.
+
+-- Mor temalı renk paleti
 local Colors = {
     Background = Color3.fromRGB(30, 20, 50),
     SecondaryBg = Color3.fromRGB(40, 30, 70),
@@ -21,10 +24,11 @@ local Colors = {
     TabActive = Color3.fromRGB(150, 50, 200),
     TabInactive = Color3.fromRGB(60, 40, 100),
     ControlButton = Color3.fromRGB(70, 50, 110),
-    CloseButton = Color3.fromRGB(180, 60, 60)
+    CloseButton = Color3.fromRGB(180, 60, 60),
+    NotificationBg = Color3.fromRGB(40, 30, 70)
 }
 
--- RGB colors for smooth animation
+-- RGB renkleri
 local RGBColors = {
     Color3.fromRGB(180, 50, 220),
     Color3.fromRGB(150, 50, 200),
@@ -34,7 +38,6 @@ local RGBColors = {
     Color3.fromRGB(160, 30, 190)
 }
 
--- Font settings
 local Fonts = {
     Title = Enum.Font.SciFi,
     Normal = Enum.Font.Gotham,
@@ -43,15 +46,9 @@ local Fonts = {
     Bold = Enum.Font.GothamBold
 }
 
--- Compact UI sizes
-local UI_SIZE = {
-    Width = 260,
-    Height = 280
-}
-
--- Element sizes
+local UI_SIZE = { Width = 280, Height = 300 } -- Logo için biraz genişletildi
 local ELEMENT_SIZES = {
-    TitleBar = 30,
+    TitleBar = 34, -- Logo için yükseklik arttırıldı
     TabHeight = 25,
     ButtonHeight = 32,
     SliderHeight = 45,
@@ -61,29 +58,18 @@ local ELEMENT_SIZES = {
     SectionSpacing = 6
 }
 
--- NOTIFICATION SYSTEM
-function OxireunUI:SendNotification(title, text, duration)
-    game.StarterGui:SetCore("SendNotification", {
-        Title = title or "Oxireun UI";
-        Text = text or "Notification";
-        Duration = duration or 3;
-    })
-end
-
--- Main Library function
+-- Ana Library fonksiyonu
 function OxireunUI.new()
     local self = setmetatable({}, OxireunUI)
     self.Windows = {}
     return self
 end
 
--- Create new window
 function OxireunUI:NewWindow(title)
-    -- Clean up old UI
+    -- Temizlik
     if game.CoreGui:FindFirstChild("OxireunUI") then
         game.CoreGui:FindFirstChild("OxireunUI"):Destroy()
     end
-
     if game.Players.LocalPlayer.PlayerGui:FindFirstChild("OxireunUI") then  
         game.Players.LocalPlayer.PlayerGui:FindFirstChild("OxireunUI"):Destroy()  
     end  
@@ -96,28 +82,109 @@ function OxireunUI:NewWindow(title)
     Window.AllToggles = {} 
     Window.IsOxireunUI = true
   
-    -- Main screen  
+    -- Ana GUI  
     local ScreenGui = Instance.new("ScreenGui")  
     ScreenGui.Name = "OxireunUI"  
     ScreenGui.ResetOnSpawn = false  
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling  
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.DisplayOrder = 10 -- Chat bug fix: Diğer GUI'lerin üstünde ama Chat ile çakışmayı önlemek için düzenli.
+    ScreenGui.IgnoreGuiInset = true 
   
-    -- Main window  
+    -- NOTIFICATION CONTAINER (UI İÇİ BİLDİRİM SİSTEMİ)
+    local NotificationContainer = Instance.new("Frame")
+    NotificationContainer.Name = "NotificationContainer"
+    NotificationContainer.Size = UDim2.new(0, 300, 1, -20)
+    NotificationContainer.Position = UDim2.new(1, -310, 0, 10)
+    NotificationContainer.BackgroundTransparency = 1
+    NotificationContainer.Parent = ScreenGui
+
+    local NotifList = Instance.new("UIListLayout")
+    NotifList.Padding = UDim.new(0, 5)
+    NotifList.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    NotifList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    NotifList.SortOrder = Enum.SortOrder.LayoutOrder
+    NotifList.Parent = NotificationContainer
+
+    -- Notification Fonksiyonu
+    function Window:Notify(notifyTitle, notifyText, duration)
+        local NotifFrame = Instance.new("Frame")
+        NotifFrame.Name = "Notification"
+        NotifFrame.Size = UDim2.new(0, 0, 0, 0) -- Animasyon için sıfırdan başla
+        NotifFrame.BackgroundColor3 = Colors.NotificationBg
+        NotifFrame.BorderSizePixel = 0
+        NotifFrame.ClipsDescendants = true
+        NotifFrame.Parent = NotificationContainer
+
+        local NotifStroke = Instance.new("UIStroke")
+        NotifStroke.Color = Colors.Border
+        NotifStroke.Thickness = 1.5
+        NotifStroke.Parent = NotifFrame
+
+        local NotifCorner = Instance.new("UICorner")
+        NotifCorner.CornerRadius = UDim.new(0, 6)
+        NotifCorner.Parent = NotifFrame
+
+        local NTitle = Instance.new("TextLabel")
+        NTitle.Name = "Title"
+        NTitle.Size = UDim2.new(1, -10, 0, 20)
+        NTitle.Position = UDim2.new(0, 5, 0, 2)
+        NTitle.BackgroundTransparency = 1
+        NTitle.Text = notifyTitle
+        NTitle.TextColor3 = Colors.Accent
+        NTitle.Font = Fonts.Bold
+        NTitle.TextSize = 14
+        NTitle.TextXAlignment = Enum.TextXAlignment.Left
+        NTitle.Parent = NotifFrame
+
+        local NText = Instance.new("TextLabel")
+        NText.Name = "Text"
+        NText.Size = UDim2.new(1, -10, 0, 35)
+        NText.Position = UDim2.new(0, 5, 0, 20)
+        NText.BackgroundTransparency = 1
+        NText.Text = notifyText
+        NText.TextColor3 = Colors.Text
+        NText.Font = Fonts.Normal
+        NText.TextSize = 12
+        NText.TextWrapped = true
+        NText.TextXAlignment = Enum.TextXAlignment.Left
+        NText.TextYAlignment = Enum.TextYAlignment.Top
+        NText.Parent = NotifFrame
+
+        -- Giriş Animasyonu
+        NotifFrame.Size = UDim2.new(0, 250, 0, 0)
+        game:GetService("TweenService"):Create(NotifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 250, 0, 60)}):Play()
+
+        -- Süre dolunca çıkış
+        task.delay(duration or 3, function()
+            if NotifFrame then
+                local tween = game:GetService("TweenService"):Create(NotifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 250, 0, 0), BackgroundTransparency = 1})
+                tween:Play()
+                tween.Completed:Connect(function()
+                    NotifFrame:Destroy()
+                end)
+            end
+        end)
+    end
+
+    -- Global erişim için UI referansı
+    OxireunUI.Notify = function(_, t, x, d) Window:Notify(t, x, d) end
+
+    -- Ana pencere  
     local MainFrame = Instance.new("Frame")  
     MainFrame.Name = "MainWindow"  
     MainFrame.Size = UDim2.new(0, UI_SIZE.Width, 0, UI_SIZE.Height)  
-    MainFrame.Position = UDim2.new(0, 10, 0.5, -UI_SIZE.Height/2)  
+    MainFrame.Position = UDim2.new(0, 20, 0.5, -UI_SIZE.Height/2)  
     MainFrame.BackgroundColor3 = Colors.Background  
     MainFrame.BorderSizePixel = 0  
     MainFrame.ClipsDescendants = true  
-    MainFrame.Active = true  
+    MainFrame.Active = true  -- Chat bug fix: Active true kalsın ama Modal kullanmıyoruz.
     MainFrame.Parent = ScreenGui  
   
     local corner = Instance.new("UICorner")  
     corner.CornerRadius = UDim.new(0, 8)  
     corner.Parent = MainFrame  
   
-    -- Slow animated RGB border  
+    -- RGB BORDER  
     local rgbBorder = Instance.new("UIStroke")  
     rgbBorder.Name = "RGBBorder"  
     rgbBorder.Color = RGBColors[1]  
@@ -125,7 +192,6 @@ function OxireunUI:NewWindow(title)
     rgbBorder.Transparency = 0  
     rgbBorder.Parent = MainFrame  
   
-    -- Slow RGB animation  
     local colorIndex = 1  
     local rgbConnection  
     rgbConnection = game:GetService("RunService").Heartbeat:Connect(function()  
@@ -140,7 +206,7 @@ function OxireunUI:NewWindow(title)
     end)
     table.insert(Window.ActiveConnections, rgbConnection)
   
-    -- Title bar  
+    -- Başlık çubuğu  
     local TitleBar = Instance.new("Frame")  
     TitleBar.Name = "TitleBar"  
     TitleBar.Size = UDim2.new(1, 0, 0, ELEMENT_SIZES.TitleBar)  
@@ -151,12 +217,27 @@ function OxireunUI:NewWindow(title)
     local titleCorner = Instance.new("UICorner")  
     titleCorner.CornerRadius = UDim.new(0, 8, 0, 0)  
     titleCorner.Parent = TitleBar  
+
+    -- ROOX LOGO (SOL ÜST)
+    local LogoImage = Instance.new("ImageLabel")
+    LogoImage.Name = "RooxLogo"
+    LogoImage.Size = UDim2.new(0, 24, 0, 24)
+    LogoImage.Position = UDim2.new(0, 6, 0.5, -12)
+    LogoImage.BackgroundTransparency = 1
+    LogoImage.Image = ROOX_LOGO_ID -- Script başında tanımlı
+    LogoImage.ScaleType = Enum.ScaleType.Fit
+    if ROOX_LOGO_ID == "" or not ROOX_LOGO_ID:find("asset") then
+        -- Eğer ID yoksa placeholder (Kalkan simgesi benzeri)
+        LogoImage.Image = "rbxassetid://7733658504" 
+        LogoImage.ImageColor3 = Colors.Accent
+    end
+    LogoImage.Parent = TitleBar
   
-    -- Title  
+    -- Başlık  
     local TitleLabel = Instance.new("TextLabel")  
     TitleLabel.Name = "Title"  
     TitleLabel.Size = UDim2.new(0.6, 0, 1, 0)  
-    TitleLabel.Position = UDim2.new(0, 8, 0, 0)  
+    TitleLabel.Position = UDim2.new(0, 36, 0, 0) -- Logo için kaydırıldı
     TitleLabel.BackgroundTransparency = 1  
     TitleLabel.Text = Window.Title  
     TitleLabel.TextColor3 = Colors.Text  
@@ -165,7 +246,7 @@ function OxireunUI:NewWindow(title)
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left  
     TitleLabel.Parent = TitleBar  
   
-    -- Control buttons  
+    -- Kontrol butonları  
     local Controls = Instance.new("Frame")  
     Controls.Name = "Controls"  
     Controls.Size = UDim2.new(0, 40, 1, 0)  
@@ -173,7 +254,6 @@ function OxireunUI:NewWindow(title)
     Controls.BackgroundTransparency = 1  
     Controls.Parent = TitleBar  
   
-    -- Minimize button  
     local MinimizeButton = Instance.new("TextButton")  
     MinimizeButton.Name = "Minimize"  
     MinimizeButton.Size = UDim2.new(0, 18, 0, 18)  
@@ -190,15 +270,14 @@ function OxireunUI:NewWindow(title)
     minimizeCorner.CornerRadius = UDim.new(1, 0)  
     minimizeCorner.Parent = MinimizeButton  
   
-    -- Close button  
     local CloseButton = Instance.new("TextButton")  
     CloseButton.Name = "Close"  
     CloseButton.Size = UDim2.new(0, 18, 0, 18)  
     CloseButton.Position = UDim2.new(0, 22, 0.5, -9)  
     CloseButton.BackgroundColor3 = Colors.CloseButton  
-    CloseButton.Text = ">"  
+    CloseButton.Text = "X"  
     CloseButton.TextColor3 = Colors.Text  
-    CloseButton.TextSize = 14  
+    CloseButton.TextSize = 12  
     CloseButton.Font = Fonts.Bold  
     CloseButton.AutoButtonColor = false  
     CloseButton.Parent = Controls  
@@ -207,14 +286,14 @@ function OxireunUI:NewWindow(title)
     closeCorner.CornerRadius = UDim.new(1, 0)  
     closeCorner.Parent = CloseButton  
   
-    -- Tabs  
+    -- Tab'ler  
     local TabsScrollFrame = Instance.new("ScrollingFrame")  
     TabsScrollFrame.Name = "TabsScroll"  
     TabsScrollFrame.Size = UDim2.new(1, -16, 0, ELEMENT_SIZES.TabHeight)  
     TabsScrollFrame.Position = UDim2.new(0, 8, 0, ELEMENT_SIZES.TitleBar + 5)  
     TabsScrollFrame.BackgroundTransparency = 1  
     TabsScrollFrame.BorderSizePixel = 0  
-    TabsScrollFrame.ScrollBarThickness = 3  
+    TabsScrollFrame.ScrollBarThickness = 2
     TabsScrollFrame.ScrollBarImageColor3 = Colors.Border  
     TabsScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.X  
     TabsScrollFrame.ScrollingDirection = Enum.ScrollingDirection.X  
@@ -232,7 +311,7 @@ function OxireunUI:NewWindow(title)
     TabsList.SortOrder = Enum.SortOrder.LayoutOrder  
     TabsList.Parent = TabsContainer  
   
-    -- Content area  
+    -- İçerik alanı  
     local ContentArea = Instance.new("Frame")  
     ContentArea.Name = "ContentArea"  
     ContentArea.Size = UDim2.new(1, -16, 1, - (ELEMENT_SIZES.TitleBar + ELEMENT_SIZES.TabHeight + 15))  
@@ -241,7 +320,7 @@ function OxireunUI:NewWindow(title)
     ContentArea.ClipsDescendants = true  
     ContentArea.Parent = MainFrame  
   
-    -- EFFECTS  
+    -- EFEKTLER  
     local function CreateClickEffect(button)  
         local effect = Instance.new("Frame")  
         effect.Name = "ClickEffect"  
@@ -333,7 +412,6 @@ function OxireunUI:NewWindow(title)
         end  
     end)  
   
-    -- FULL CLEANUP FUNCTION
     local function FullCleanup()
         for _, conn in pairs(Window.ActiveConnections) do
             if conn then conn:Disconnect() end
@@ -357,18 +435,14 @@ function OxireunUI:NewWindow(title)
         end
     end
 
-    -- Close Button Logic with Notification
     CloseButton.MouseButton1Click:Connect(function()  
         CreateClickEffect(CloseButton)  
         ScreenGui:Destroy()
-        OxireunUI:SendNotification("Closed", "UI window closed", 2)
     end)  
     
-    -- Cleanup when UI is destroyed
     ScreenGui.AncestryChanged:Connect(function()
         if not ScreenGui.Parent then
             FullCleanup()
-            OxireunUI:SendNotification("Notice", "UI closed and cleaned up", 2)
         end
     end)
   
@@ -418,7 +492,7 @@ function OxireunUI:NewWindow(title)
         SectionFrame.BackgroundColor3 = Colors.SectionBg  
         SectionFrame.BackgroundTransparency = 0  
         SectionFrame.BorderSizePixel = 0  
-        SectionFrame.ScrollBarThickness = 3  
+        SectionFrame.ScrollBarThickness = 2
         SectionFrame.ScrollBarImageColor3 = Colors.Border  
         SectionFrame.Visible = false  
         SectionFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y  
@@ -696,7 +770,8 @@ function OxireunUI:NewWindow(title)
                 OptionsScreenGui.Name = "DropdownOptions"  
                 OptionsScreenGui.ResetOnSpawn = false  
                 OptionsScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling  
-                OptionsScreenGui.Parent = ScreenGui  
+                OptionsScreenGui.DisplayOrder = 20 -- Dropdown üstte görünsün
+                OptionsScreenGui.Parent = ScreenGui.Parent -- Aynı parent
                 
                 OptionsContainer = Instance.new("Frame")  
                 OptionsContainer.Name = "OptionsContainer"  
@@ -813,18 +888,17 @@ function OxireunUI:NewWindow(title)
         return Section  
     end  
   
-    -- ENHANCED REMOTE LOGGER DETECTION SYSTEM (ALWAYS ERRORS FOR HYDROXIDE)
+    -- =========================================================================
+    -- REMOTE LOGGER DETECTION SYSTEM (CUSTOM UI NOTIFICATION TRIGGER)
+    -- =========================================================================
     local CoreGui = game:GetService("CoreGui")
     local PlayerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     
-    -- Remote Logger detection signatures
     local RemoteLoggerSignatures = {
-        -- Multiple RemoteFunction/RemoteEvent detection
         hasRemoteMonitoring = function(obj)
             if not obj:IsA("ScreenGui") then return false end
             local labelCount = 0
             local hasRemoteInfo = false
-            
             for _, desc in pairs(obj:GetDescendants()) do
                 if desc:IsA("TextLabel") or desc:IsA("TextBox") then
                     local txt = desc.Text:lower() .. desc.Name:lower()
@@ -836,16 +910,12 @@ function OxireunUI:NewWindow(title)
                     end
                 end
             end
-            
             return hasRemoteInfo and labelCount >= 2
         end,
-        
-        -- Special spy tool features
         hasSpyFeatures = function(obj)
             if not obj:IsA("ScreenGui") then return false end
             local hasLogList = false
             local hasDetailPanel = false
-            
             for _, child in pairs(obj:GetDescendants()) do
                 if child:IsA("Frame") or child:IsA("ScrollingFrame") then
                     if child.Size.X.Scale > 0.3 or child.Size.Y.Scale > 0.3 then
@@ -860,15 +930,12 @@ function OxireunUI:NewWindow(title)
                     end
                 end
             end
-            
             return hasLogList and hasDetailPanel
         end,
-        
-        -- Hydroxide and other spy tools detection (ALWAYS ERRORS)
         hasSpyName = function(obj)
             if not obj:IsA("ScreenGui") then return false end
             local name = obj.Name:lower()
-            local blacklist = {"remotespy", "simplespy", "hydroxide", "turtlespy", "darkdex", "spy", "logger", "monitor", "debugger", "tracer", "spyware"}
+            local blacklist = {"remotespy", "simplespy", "hydroxide", "turtlespy", "darkdex", "spy", "logger", "monitor", "debugger", "tracer"}
             for _, badName in pairs(blacklist) do
                 if string.find(name, badName) then return true end
             end
@@ -876,52 +943,33 @@ function OxireunUI:NewWindow(title)
         end
     }
     
-    -- Detection function
     local function IsRemoteLogger(obj)
-        -- Protect Oxireun UI
-        if obj:IsA("ScreenGui") and obj.Name == "OxireunUI" then
-            return false
-        end
-        
+        if obj:IsA("ScreenGui") and obj.Name == "OxireunUI" then return false end
         return RemoteLoggerSignatures.hasRemoteMonitoring(obj) or 
                RemoteLoggerSignatures.hasSpyFeatures(obj) or
                RemoteLoggerSignatures.hasSpyName(obj)
     end
     
-    -- Initial scan (Only remote loggers)
-    for _, v in pairs(CoreGui:GetChildren()) do 
+    -- Logger Tespitinde Yeni Notification Sistemini Kullan
+    local function BlockLogger(v)
         if IsRemoteLogger(v) then
             pcall(function() v:Destroy() end)
-            OxireunUI:SendNotification("🛡️ Security", "Remote Logger blocked!", 2)
-            error("NOPE NOPE - Remote Logger Detected and Blocked!")
-        end
-    end
-    
-    for _, v in pairs(PlayerGui:GetChildren()) do 
-        if IsRemoteLogger(v) then
-            pcall(function() v:Destroy() end)
-            OxireunUI:SendNotification("🛡️ Security", "Remote Logger blocked!", 2)
-            error("NOPE NOPE - Remote Logger Detected and Blocked!")
+            -- YENİ: Custom UI Notification Tetikleniyor
+            Window:Notify("Security Shield", "Remote Logger tespit edildi ve engellendi!", 4)
         end
     end
 
-    -- Continuous monitoring (New GUIs added)
+    for _, v in pairs(CoreGui:GetChildren()) do BlockLogger(v) end
+    for _, v in pairs(PlayerGui:GetChildren()) do BlockLogger(v) end
+
     local c1 = CoreGui.ChildAdded:Connect(function(child)
         task.wait(0.1)
-        if IsRemoteLogger(child) then
-            pcall(function() child:Destroy() end)
-            OxireunUI:SendNotification("🛡️ Security", "Remote Logger blocked!", 2)
-            error("NOPE NOPE - Remote Logger Detected and Blocked!")
-        end
+        BlockLogger(child)
     end)
     
     local c2 = PlayerGui.ChildAdded:Connect(function(child)
         task.wait(0.1)
-        if IsRemoteLogger(child) then
-            pcall(function() child:Destroy() end)
-            OxireunUI:SendNotification("🛡️ Security", "Remote Logger blocked!", 2)
-            error("NOPE NOPE - Remote Logger Detected and Blocked!")
-        end
+        BlockLogger(child)
     end)
     
     table.insert(Window.ActiveConnections, c1)
